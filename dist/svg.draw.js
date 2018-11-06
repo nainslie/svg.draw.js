@@ -1,4 +1,4 @@
-/*! svg.draw.js - v2.0.3 - 2018-07-23
+/*! svg.draw.js - v2.0.3 - 2018-11-15
 * https://github.com/svgdotjs/svg.draw.js
 * Copyright (c) 2018 Ulrich-Matthias Schäfer; Licensed MIT */
 
@@ -227,7 +227,11 @@
 
     // Default values. Can be changed for the whole project if needed
     SVG.Element.prototype.draw.defaults = {
-        snapToGrid: 1        // Snaps to a grid of `snapToGrid` px
+        snapToGrid: 1,        // Snaps to a grid of `snapToGrid` px
+        pointSize: 7,
+        pointFill: "#ccc",
+        initialPointFill: null,
+        pointStroke: { width: 1, color: "#000"}
     };
 
     SVG.Element.prototype.draw.extend = function(name, obj){
@@ -315,8 +319,20 @@
             // This is absolutely not needed and maybe removed in a later release
             this.drawCircles();
 
-        },
+            var _this = this;
 
+            SVG.on(window, 'keydown.draw', function (e) {
+                if (e.keyCode === 17) {
+                    _this._snapTo90 = true;
+                }
+            });
+
+            SVG.on(window, 'keyup.draw', function (e) {
+                if (e.keyCode === 17) {
+                    _this._snapTo90 = false;
+                }
+            });
+        },
 
         // The calc-function sets the position of the last point to the mouse-position (with offset ofc)
         calc:function (e) {
@@ -325,6 +341,33 @@
 
             if (e) {
                 var p = this.transformPoint(e.clientX, e.clientY);
+
+                if (this._snapTo90) {
+                    var lastPoint = arr[arr.length - 1];
+
+                    var v = { x: p.x - lastPoint[0], y: lastPoint[1] - p.y };
+                    
+                    var theta = Math.atan2(v.y, v.x);
+                    
+                    var q0 = Math.PI / 4.0;
+                    var q1 = (3.0 * Math.PI) / 4.0;
+                    var q2 = (-3.0 * Math.PI) / 4.0;
+                    var q3 = (-1.0 * Math.PI) / 4.0;
+
+                    if (theta >= 0 && theta < q0)
+                        p.y = lastPoint[1];
+                    else if (theta >= q0 && theta < q1)
+                        p.x = lastPoint[0];
+                    else if (theta >= q1 && theta < Math.PI)
+                        p.y = lastPoint[1];
+                    else if (theta < 0 && theta >= q3)
+                        p.y = lastPoint[1];
+                    else if (theta < q3 && theta >= q2)
+                        p.x = lastPoint[0];
+                    else if (theta > -Math.PI && theta < q2)
+                        p.y = lastPoint[1];
+                }
+
                 arr.push(this.snapToGrid([p.x, p.y]));
             }
 
@@ -366,6 +409,8 @@
 
             delete this.set;
 
+            SVG.off(window, 'keydown.draw');
+            SVG.off(window, 'keyup.draw');
         },
 
         drawCircles:function () {
@@ -384,7 +429,7 @@
 
                 var p = this.p.matrixTransform(this.parent.node.getScreenCTM().inverse().multiply(this.el.node.getScreenCTM()));
 
-                this.set.add(this.parent.circle(5).stroke({width: 1}).fill('#ccc').center(p.x, p.y));
+                this.set.add(this.parent.circle(this.options.pointSize).stroke(this.options.pointStroke).fill(i === 0 ? (this.options.initialPointFill || this.options.pointFill) : this.options.pointFill).center(p.x, p.y));                
             }
         },
 

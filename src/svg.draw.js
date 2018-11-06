@@ -222,7 +222,11 @@
 
     // Default values. Can be changed for the whole project if needed
     SVG.Element.prototype.draw.defaults = {
-        snapToGrid: 1        // Snaps to a grid of `snapToGrid` px
+        snapToGrid: 1,        // Snaps to a grid of `snapToGrid` px
+        pointSize: 7,
+        pointFill: "#ccc",
+        initialPointFill: null,
+        pointStroke: { width: 1, color: "#000"}
     };
 
     SVG.Element.prototype.draw.extend = function(name, obj){
